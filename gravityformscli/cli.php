@@ -3,7 +3,7 @@
 Plugin Name: Gravity Forms CLI
 Plugin URI: https://gravityforms.com
 Description: Manage Gravity Forms with the WP CLI.
-Version: 1.7
+Version: 1.9
 Author: Rocketgenius
 Author URI: https://gravityforms.com
 License: GPL-2.0+
@@ -30,12 +30,15 @@ along with this program.  If not, see http://www.gnu.org/licenses.
 defined( 'ABSPATH' ) || defined( 'WP_CLI' ) || die();
 
 // Defines the current version of the CLI add-on
-define( 'GF_CLI_VERSION', '1.7' );
+define( 'GF_CLI_VERSION', '1.9' );
 
 define( 'GF_CLI_MIN_GF_VERSION', '1.9.17.8' );
 
 // After GF is loaded, load the CLI add-on
-defined( 'ABSPATH' ) && add_action( 'gform_loaded', array( 'GF_CLI_Bootstrap', 'load_addon' ), 1 );
+// When running as a standalone WP-CLI package, add_action is not available.
+if ( defined( 'ABSPATH' ) && function_exists( 'add_action' ) ) {
+	add_action( 'gform_loaded', array( 'GF_CLI_Bootstrap', 'load_addon' ), 1 );
+}
 
 
 
@@ -58,7 +61,8 @@ class GF_CLI_Bootstrap {
 	public static function load_addon() {
 
 		// Requires the class file
-		require_once( plugin_dir_path( __FILE__ ) . '/class-gf-cli.php' );
+		// Using dirname() for standalone WP-CLI package compatibility.
+		require_once( dirname( __FILE__ ) . '/class-gf-cli.php' );
 
 		// Registers the class name with GFAddOn
 		GFAddOn::register( 'GF_CLI' );
@@ -105,9 +109,13 @@ GF_CLI_Bootstrap::load_cli();
  * Returns an instance of the GF_CLI class
  *
  * @since 1.0-beta-1
- * @return object An instance of the GF_CLI class
+ * @return object|null An instance of the GF_CLI class, or null if not available.
  */
 function gf_cli() {
-	return GF_CLI::get_instance();
+	if ( class_exists( 'GF_CLI' ) ) {
+		return GF_CLI::get_instance();
+	}
+
+	return null;
 }
 
